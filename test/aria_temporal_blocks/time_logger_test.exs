@@ -15,14 +15,14 @@ defmodule AriaTemporalBlocks.TimeLoggerTest do
       # Test pickup action (PT2S)
       assert TimeLogger.extract_action_duration(domain, :pickup, ["block_a"]) == 2.0
 
-      # Test unstack action (PT3S)
-      assert TimeLogger.extract_action_duration(domain, :unstack, ["block_a", "block_b"]) == 3.0
+      # Test unstack action (PT2.5S)
+      assert TimeLogger.extract_action_duration(domain, :unstack, ["block_a", "block_b"]) == 2.5
 
-      # Test putdown action (actual domain value is 5.0 due to AriaCore converter issue)
-      assert TimeLogger.extract_action_duration(domain, :putdown, ["block_a"]) == 5.0
+      # Test putdown action (PT1.5S)
+      assert TimeLogger.extract_action_duration(domain, :putdown, ["block_a"]) == 1.5
 
-      # Test stack action (actual domain value is 5.0 due to AriaCore converter issue)
-      assert TimeLogger.extract_action_duration(domain, :stack, ["block_a", "block_b"]) == 5.0
+      # Test stack action (PT3S)
+      assert TimeLogger.extract_action_duration(domain, :stack, ["block_a", "block_b"]) == 3.0
     end
 
     test "handles parametric duration for wait action" do
@@ -50,7 +50,7 @@ defmodule AriaTemporalBlocks.TimeLoggerTest do
       # Create a simple solution tree manually for testing
       actions = [
         {:pickup, ["block_a"]},    # 2.0s
-        {:stack, ["block_a", "block_b"]}, # 5.0s (actual domain value)
+        {:stack, ["block_a", "block_b"]}, # 3.0s (PT3S)
         {:wait, [1.0]}             # 1.0s
       ]
 
@@ -74,14 +74,14 @@ defmodule AriaTemporalBlocks.TimeLoggerTest do
       second_action = Enum.at(timeline, 1)
       assert second_action.action == :stack
       assert second_action.start_time == 2.0
-      assert second_action.end_time == 7.0  # 2.0 + 5.0 = 7.0
-      assert second_action.duration == 5.0
+      assert second_action.end_time == 5.0  # 2.0 + 3.0 = 5.0
+      assert second_action.duration == 3.0
 
       # Check third action (wait)
       third_action = Enum.at(timeline, 2)
       assert third_action.action == :wait
-      assert third_action.start_time == 7.0
-      assert third_action.end_time == 8.0
+      assert third_action.start_time == 5.0
+      assert third_action.end_time == 6.0
       assert third_action.duration == 1.0
     end
   end

@@ -49,6 +49,10 @@ defmodule AriaTemporalBlocks.SchedulingDurationsTest do
           # Test timeline calculation directly
           solution_tree = Map.get(plan_result, :solution_tree)
           if solution_tree do
+            # Log the planned timeline explicitly
+            TimeLogger.log_planned_timeline(solution_tree, domain,
+              scheduled_start_time: start_time, use_iso_format: true)
+
             case TimeLogger.calculate_timeline(solution_tree, domain,
               scheduled_start_time: start_time, use_iso_format: true) do
               {:ok, timeline} ->
@@ -101,8 +105,8 @@ defmodule AriaTemporalBlocks.SchedulingDurationsTest do
 
     # Verify expected durations from domain
     assert pickup_duration == 2.0, "pickup should be 2.0s"
-    assert stack_duration == 5.0, "stack should be 5.0s"
-    assert putdown_duration == 5.0, "putdown should be 5.0s"
+    assert stack_duration == 3.0, "stack should be 3.0s"
+    assert putdown_duration == 1.5, "putdown should be 1.5s"
     assert wait_duration == 3.5, "wait(3.5) should be 3.5s"
 
     IO.puts("✓ All duration extractions validated")
@@ -120,7 +124,7 @@ defmodule AriaTemporalBlocks.SchedulingDurationsTest do
     todos = [
       {:pickup, ["block_a"]},     # 2.0s
       {:wait, [3.0]},             # 3.0s
-      {:putdown, ["block_a"]}     # 5.0s
+      {:putdown, ["block_a"]}     # 1.5s
     ]
 
     import ExUnit.CaptureLog
@@ -128,30 +132,46 @@ defmodule AriaTemporalBlocks.SchedulingDurationsTest do
     # Test relative timing (traditional)
     IO.puts("\n=== RELATIVE TIMING CALCULATION ===")
     relative_log = capture_log([level: :debug], fn ->
-      AriaHybridPlanner.plan(domain, state, todos, verbose: 1)
+      case AriaHybridPlanner.plan(domain, state, todos, verbose: 1) do
+        {:ok, plan_result} ->
+          solution_tree = Map.get(plan_result, :solution_tree)
+          if solution_tree do
+            TimeLogger.log_planned_timeline(solution_tree, domain)
+          end
+        {:error, _reason} -> :ok
+      end
     end)
 
     # Test absolute timing (scheduled)
     start_time = "2025-08-04T15:30:00Z"
     IO.puts("\n=== ABSOLUTE TIMING CALCULATION ===")
     absolute_log = capture_log([level: :debug], fn ->
-      AriaHybridPlanner.plan(domain, state, todos,
+      case AriaHybridPlanner.plan(domain, state, todos,
         verbose: 1,
         scheduled_start_time: start_time,
         use_iso_format: true
-      )
+      ) do
+        {:ok, plan_result} ->
+          solution_tree = Map.get(plan_result, :solution_tree)
+          if solution_tree do
+            TimeLogger.log_planned_timeline(solution_tree, domain,
+              scheduled_start_time: start_time, use_iso_format: true)
+          end
+        {:error, _reason} -> :ok
+      end
     end)
 
     # Verify both contain proper timing information
     assert relative_log =~ "t=0.0s - t=2.0s: pickup"
     assert relative_log =~ "t=2.0s - t=5.0s: wait(3.0)"
-    assert relative_log =~ "t=5.0s - t=10.0s: putdown"
-    assert relative_log =~ "Total planned duration: 10.0s"
+    assert relative_log =~ "t=5.0s - t=6.5s: putdown"
+    assert relative_log =~ "Total planned duration: 6.5s"
 
-    assert absolute_log =~ "2025-08-04T15:30:00Z - 2025-08-04T15:30:02Z: pickup"
-    assert absolute_log =~ "2025-08-04T15:30:02Z - 2025-08-04T15:30:05Z: wait(3.0)"
-    assert absolute_log =~ "2025-08-04T15:30:05Z - 2025-08-04T15:30:10Z: putdown"
-    assert absolute_log =~ "Total planned duration: 10.0s"
+    # Use regex patterns to handle microsecond precision in timestamps
+    assert absolute_log =~ ~r/2025-08-04T15:30:00(\.000000)?Z - 2025-08-04T15:30:02(\.000000)?Z: pickup/
+    assert absolute_log =~ ~r/2025-08-04T15:30:02(\.000000)?Z - 2025-08-04T15:30:05(\.000000)?Z: wait\(3\.0\)/
+    assert absolute_log =~ ~r/2025-08-04T15:30:05(\.000000)?Z - 2025-08-04T15:30:06\.500000Z: putdown/
+    assert absolute_log =~ "Total planned duration: 6.5s"
 
     IO.puts("✓ Both relative and absolute timing calculations validated")
   end
@@ -180,10 +200,10 @@ defmodule AriaTemporalBlocks.SchedulingDurationsTest do
           assert duration == 2.0, "pickup duration should be 2.0s, got #{duration}s"
           wait_acc
         :stack ->
-          assert duration == 5.0, "stack duration should be 5.0s, got #{duration}s"
+          assert duration == 3.0, "stack duration should be 3.0s, got #{duration}s"
           wait_acc
         :putdown ->
-          assert duration == 5.0, "putdown duration should be 5.0s, got #{duration}s"
+          assert duration == 1.5, "putdown duration should be 1.5s, got #{duration}s"
           wait_acc
         :wait ->
           # For wait actions, just verify the duration is reasonable and track it

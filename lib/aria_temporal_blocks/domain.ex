@@ -18,7 +18,7 @@ defmodule AriaTemporalBlocks.Domain do
   @type block :: String.t()
 
   # Entity setup action
-  @action true
+  @action duration: "PT0S"
   @spec setup_temporal_blocks_scenario(AriaState.t(), []) :: {:ok, AriaState.t()} | {:error, atom()}
   def setup_temporal_blocks_scenario(state, []) do
     state = state
@@ -43,7 +43,7 @@ defmodule AriaTemporalBlocks.Domain do
   - Block becomes not clear
   - Hand holds the block
   """
-  @action true
+  @action duration: "PT2S"
   @spec pickup(AriaState.t(), []) :: {:ok, AriaState.t()} | {:error, atom()}
   def pickup(state, [block]) do
     is_clear = AriaState.get_fact(state, block, "clear")
@@ -77,7 +77,7 @@ defmodule AriaTemporalBlocks.Domain do
   - Hand holds block1
   - Block2 becomes clear (if block2 is not table)
   """
-  @action true
+  @action duration: "PT2.5S"
   @spec unstack(AriaState.t(), [block()]) :: {:ok, AriaState.t()} | {:error, atom()}
   def unstack(state, [block1, block2]) do
     # Check preconditions
@@ -118,7 +118,7 @@ defmodule AriaTemporalBlocks.Domain do
   - Block becomes clear
   - Hand becomes empty
   """
-  @action true
+  @action duration: "PT1.5S"
   @spec putdown(AriaState.t(), [block()]) :: {:ok, AriaState.t()} | {:error, atom()}
   def putdown(state, [block]) do
     # Check preconditions
@@ -150,7 +150,7 @@ defmodule AriaTemporalBlocks.Domain do
   - Hand becomes empty
   - Block2 becomes not clear
   """
-  @action true
+  @action duration: "PT3S"
   @spec stack(AriaState.t(), [block()]) :: {:ok, AriaState.t()} | {:error, atom()}
   def stack(state, [block1, block2]) do
     # Check preconditions
@@ -170,6 +170,25 @@ defmodule AriaTemporalBlocks.Domain do
 
         {:ok, new_state}
     end
+  end
+
+  @doc """
+  Wait for a specified duration (temporal action with parametric duration).
+
+  This action allows the planner to insert delays in the timeline.
+  The duration parameter specifies how long to wait in seconds.
+
+  Preconditions:
+  - None (waiting is always possible)
+
+  Effects:
+  - None (state remains unchanged, only time passes)
+  """
+  @action duration: "PT1S"
+  @spec wait(AriaState.t(), [float()]) :: {:ok, AriaState.t()} | {:error, atom()}
+  def wait(state, [_duration]) do
+    # Wait action doesn't change state, just consumes time
+    {:ok, state}
   end
 
   @doc """

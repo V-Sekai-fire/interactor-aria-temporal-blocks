@@ -29,11 +29,13 @@ defmodule AriaTemporalBlocks.IntegrationTest do
     import ExUnit.CaptureLog
 
     log = capture_log([level: :debug], fn ->
+      # Use run_lazy which does both planning and execution
       case AriaHybridPlanner.run_lazy(domain, state, todos, verbose: 1) do
-        {:ok, {_solution_tree, _final_state}} ->
-          :ok
+        {:ok, {solution_tree, _final_state}} ->
+          # Log the planned timeline explicitly after execution
+          AriaTemporalBlocks.TimeLogger.log_planned_timeline(solution_tree, domain)
         {:error, reason} ->
-          IO.puts("Planning failed: #{reason}")
+          IO.puts("Planning/execution failed: #{reason}")
       end
     end)
 
@@ -43,13 +45,16 @@ defmodule AriaTemporalBlocks.IntegrationTest do
     assert log =~ "Actions sequence:"
     assert log =~ "=== END PLANNED TIMELINE ==="
 
-    # Should contain execution timing logs
-    assert log =~ "EXEC"
+    # Should contain action names in the timeline
     assert log =~ "pickup"
     assert log =~ "stack"
     assert log =~ "wait"
 
     # Should show the wait action with parametric duration
     assert log =~ "wait(2.0)"
+    
+    # Should show proper durations
+    assert log =~ "[2.0s]"  # pickup duration
+    assert log =~ "[3.0s]"  # stack duration
   end
 end

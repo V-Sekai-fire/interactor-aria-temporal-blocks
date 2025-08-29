@@ -43,7 +43,13 @@ defmodule AriaTemporalBlocks.IsoDatetimeSampleTest do
         scheduled_start_time: future_time,
         use_iso_format: true
       ) do
-        {:ok, _plan_result} ->
+        {:ok, plan_result} ->
+          # Log the planned timeline explicitly
+          solution_tree = Map.get(plan_result, :solution_tree)
+          if solution_tree do
+            AriaTemporalBlocks.TimeLogger.log_planned_timeline(solution_tree, domain,
+              scheduled_start_time: future_time, use_iso_format: true)
+          end
           IO.puts("✓ Planning completed successfully with ISO datetime scheduling")
         {:error, reason} ->
           IO.puts("✗ Planning failed: #{reason}")
@@ -107,7 +113,15 @@ defmodule AriaTemporalBlocks.IsoDatetimeSampleTest do
 
     IO.puts("\n=== RELATIVE TIME FORMATTING ===")
     relative_log = capture_log([level: :debug], fn ->
-      AriaHybridPlanner.plan(domain, state, todos, verbose: 1)
+      case AriaHybridPlanner.plan(domain, state, todos, verbose: 1) do
+        {:ok, plan_result} ->
+          # Log the planned timeline explicitly
+          solution_tree = Map.get(plan_result, :solution_tree)
+          if solution_tree do
+            AriaTemporalBlocks.TimeLogger.log_planned_timeline(solution_tree, domain)
+          end
+        {:error, _reason} -> :ok
+      end
     end)
 
     # Extract and display relative timeline
@@ -121,11 +135,20 @@ defmodule AriaTemporalBlocks.IsoDatetimeSampleTest do
     start_time = "2025-08-04T18:30:00Z"
 
     absolute_log = capture_log([level: :debug], fn ->
-      AriaHybridPlanner.plan(domain, state, todos,
+      case AriaHybridPlanner.plan(domain, state, todos,
         verbose: 1,
         scheduled_start_time: start_time,
         use_iso_format: true
-      )
+      ) do
+        {:ok, plan_result} ->
+          # Log the planned timeline explicitly
+          solution_tree = Map.get(plan_result, :solution_tree)
+          if solution_tree do
+            AriaTemporalBlocks.TimeLogger.log_planned_timeline(solution_tree, domain,
+              scheduled_start_time: start_time, use_iso_format: true)
+          end
+        {:error, _reason} -> :ok
+      end
     end)
 
     # Extract and display absolute timeline

@@ -66,10 +66,12 @@ defmodule AriaTemporalBlocks.TimeLogger do
           nil -> 0.0
           last_entry ->
             if use_iso_format and scheduled_start_time do
-              # Calculate total duration from start time to end time
+              # Calculate total duration from start time to end time with microsecond precision
               start_dt = parse_iso_datetime(scheduled_start_time)
               end_dt = parse_iso_datetime(last_entry.end_time)
-              DateTime.diff(end_dt, start_dt, :second)
+              # Use microsecond diff and convert to seconds with fractional precision
+              microsecond_diff = DateTime.diff(end_dt, start_dt, :microsecond)
+              microsecond_diff / 1_000_000.0
             else
               last_entry.end_time
             end
@@ -207,9 +209,11 @@ defmodule AriaTemporalBlocks.TimeLogger do
 
         {start_time, end_time} = case time_format do
           :iso_datetime ->
-            # Calculate absolute datetimes
+            # Calculate absolute datetimes with microsecond precision
             start_dt = current_time
-            end_dt = DateTime.add(start_dt, trunc(duration), :second)
+            # Convert duration to microseconds for precise calculation
+            duration_microseconds = trunc(duration * 1_000_000)
+            end_dt = DateTime.add(start_dt, duration_microseconds, :microsecond)
             {DateTime.to_iso8601(start_dt), DateTime.to_iso8601(end_dt)}
 
           :unix_seconds ->
@@ -232,7 +236,9 @@ defmodule AriaTemporalBlocks.TimeLogger do
 
         next_time = case time_format do
           :iso_datetime ->
-            DateTime.add(current_time, trunc(duration), :second)
+            # Use microsecond precision for next_time calculation too
+            duration_microseconds = trunc(duration * 1_000_000)
+            DateTime.add(current_time, duration_microseconds, :microsecond)
           _ ->
             current_time + duration
         end
@@ -299,14 +305,61 @@ defmodule AriaTemporalBlocks.TimeLogger do
     case Map.get(domain, :actions, %{}) do
       actions when is_map(actions) ->
         case Map.get(actions, action_key, %{}) do
-          %{metadata: %{duration: {:fixed, seconds}}} when is_number(seconds) ->
-            # Convert seconds to float
-            Float.round(seconds / 1.0, 1)
-          %{metadata: %{duration: duration}} ->
-            duration
+          %{metadata: %{duration: duration_obj}} ->
+            # Handle Duration objects by converting to seconds
+            convert_duration_to_seconds(duration_obj)
           _ -> nil
         end
       _ -> nil
+    end
+  end
+
+  # Convert Duration objects to seconds
+  @spec convert_duration_to_seconds(any()) :: float() | nil
+  defp convert_duration_to_seconds(duration_obj) do
+    cond do
+      # Handle Duration struct objects
+      is_struct(duration_obj) ->
+        try do
+          # Try to call to_seconds if it exists
+          if function_exported?(duration_obj.__struct__, :to_seconds, 1) do
+            duration_obj.__struct__.to_seconds(duration_obj)
+          else
+            # Try to access seconds field directly
+            case Map.get(duration_obj, :seconds) do
+              seconds when is_number(seconds) -> Float.round(seconds / 1.0, 1)
+              _ -> 
+                # Try to parse from string representation
+                duration_str = inspect(duration_obj)
+                case Regex.run(~r/#<Duration\(([^)]+)\)>/, duration_str) do
+                  [_, iso_duration] -> parse_iso8601_duration(iso_duration)
+                  _ -> nil
+                end
+            end
+          end
+        rescue
+          _ -> nil
+        end
+
+      # Handle legacy formats
+      is_tuple(duration_obj) ->
+        case duration_obj do
+          {:fixed, seconds} when is_number(seconds) ->
+            Float.round(seconds / 1.0, 1)
+          _ -> nil
+        end
+
+      # Handle direct numeric values
+      is_number(duration_obj) ->
+        Float.round(duration_obj / 1.0, 1)
+
+      # Handle string ISO 8601 durations
+      is_binary(duration_obj) ->
+        parse_iso8601_duration(duration_obj)
+
+      # Unknown format
+      true ->
+        nil
     end
   end
 
