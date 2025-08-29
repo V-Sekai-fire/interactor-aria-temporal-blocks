@@ -34,9 +34,9 @@ defmodule AriaTemporalBlocks.PlanValidationTest do
       case result do
         {:ok, final_state} ->
           # Check if final state matches goal: c on b, b on a, a on table
-          assert AriaState.get_fact(final_state, "c", "pos") == "b"
-          assert AriaState.get_fact(final_state, "b", "pos") == "a"
-          assert AriaState.get_fact(final_state, "a", "pos") == "table"
+          assert AriaState.get_fact(final_state, "c", "pos") == {:ok, "b"}
+          assert AriaState.get_fact(final_state, "b", "pos") == {:ok, "a"}
+          assert AriaState.get_fact(final_state, "a", "pos") == {:ok, "table"}
           Logger.info("Left sequence is LEGAL and achieves the goal")
         {:error, {action, reason}} ->
           Logger.error("Left sequence is ILLEGAL: Action #{inspect(action)} failed with reason: #{reason}")

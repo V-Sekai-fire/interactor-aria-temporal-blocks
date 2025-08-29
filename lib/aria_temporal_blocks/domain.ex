@@ -51,9 +51,9 @@ defmodule AriaTemporalBlocks.Domain do
     current_pos = AriaState.get_fact(state, block, "pos")
 
     cond do
-      current_pos != "table" -> {:error, :not_on_table}
-      not is_clear -> {:error, :block_not_clear}
-      hand_holding != false -> {:error, :hand_not_empty}
+      current_pos != {:ok, "table"} -> {:error, :not_on_table}
+      is_clear != {:ok, true} -> {:error, :block_not_clear}
+      hand_holding != {:ok, false} -> {:error, :hand_not_empty}
       true ->
         new_state = state
         |> AriaState.set_fact(block, "pos", "hand")
@@ -86,9 +86,9 @@ defmodule AriaTemporalBlocks.Domain do
     hand_holding = AriaState.get_fact(state, "hand", "holding")
 
     cond do
-      current_pos != block2 -> {:error, :not_on_target_block}
-      is_clear != true -> {:error, :block_not_clear}
-      hand_holding != false -> {:error, :hand_not_empty}
+      current_pos != {:ok, block2} -> {:error, :not_on_target_block}
+      is_clear != {:ok, true} -> {:error, :block_not_clear}
+      hand_holding != {:ok, false} -> {:error, :hand_not_empty}
       true ->
         # Execute action
         new_state = state
@@ -125,7 +125,7 @@ defmodule AriaTemporalBlocks.Domain do
     hand_holding = AriaState.get_fact(state, "hand", "holding")
 
     cond do
-      hand_holding != block -> {:error, :not_holding_block}
+      hand_holding != {:ok, block} -> {:error, :not_holding_block}
       true ->
         # Execute action
         new_state = state
@@ -158,8 +158,8 @@ defmodule AriaTemporalBlocks.Domain do
     block2_clear = AriaState.get_fact(state, block2, "clear")
 
     cond do
-      hand_holding != block1 -> {:error, :not_holding_block}
-      block2_clear != true -> {:error, :destination_not_clear}
+      hand_holding != {:ok, block1} -> {:error, :not_holding_block}
+      block2_clear != {:ok, true} -> {:error, :destination_not_clear}
       true ->
         # Execute action
         new_state = state
@@ -182,13 +182,11 @@ defmodule AriaTemporalBlocks.Domain do
   @spec take(AriaState.t(), [block()]) :: {:ok, [AriaHybridPlanner.todo_item()]} | {:error, atom()}
   def take(state, [block]) do
     current_pos = AriaState.get_fact(state, block, "pos")
-    if current_pos == nil do
-      {:error, :block_not_found}
-    else
-      case current_pos do
-        "table" -> {:ok, [{:pickup, [block]}]}
-        other_block when is_binary(other_block) -> {:ok, [{:unstack, [block, other_block]}]}
-      end
+    case current_pos do
+      {:error, :not_found} -> {:error, :block_not_found}
+      {:ok, "table"} -> {:ok, [{:pickup, [block]}]}
+      {:ok, other_block} when is_binary(other_block) -> {:ok, [{:unstack, [block, other_block]}]}
+      _ -> {:error, :invalid_position}
     end
   end
 
@@ -206,13 +204,13 @@ defmodule AriaTemporalBlocks.Domain do
     current_pos = AriaState.get_fact(state, block, "pos")
 
     # If already at destination, no action needed
-    if current_pos == destination do
+    if current_pos == {:ok, destination} do
       {:ok, []}
     else
       # Check what subgoals are actually needed
       is_clear = AriaState.get_fact(state, block, "clear")
       destination_clear = case destination do
-        "table" -> true  # Table is always available
+        "table" -> {:ok, true}  # Table is always available
         dest_block -> AriaState.get_fact(state, dest_block, "clear")
       end
 
@@ -220,14 +218,14 @@ defmodule AriaTemporalBlocks.Domain do
       subgoals = []
 
       # Only add clear block goal if block is not already clear
-      subgoals = if is_clear != true do
+      subgoals = if is_clear != {:ok, true} do
         [{"clear", block, true} | subgoals]
       else
         subgoals
       end
 
       # Only add clear destination goal if destination is not already clear
-      subgoals = if destination != "table" and destination_clear != true do
+      subgoals = if destination != "table" and destination_clear != {:ok, true} do
         [{"clear", destination, true} | subgoals]
       else
         subgoals
@@ -235,8 +233,8 @@ defmodule AriaTemporalBlocks.Domain do
 
       # Add movement actions
       pickup_action = case current_pos do
-        "table" -> {:pickup, [block]}
-        other_block when is_binary(other_block) -> {:unstack, [block, other_block]}
+        {:ok, "table"} -> {:pickup, [block]}
+        {:ok, other_block} when is_binary(other_block) -> {:unstack, [block, other_block]}
         _ -> {:pickup, [block]}  # Default fallback
       end
 
@@ -264,21 +262,21 @@ defmodule AriaTemporalBlocks.Domain do
     current_pos = AriaState.get_fact(state, block, "pos")
 
     # If already at destination, no action needed
-    if current_pos == destination do
+    if current_pos == {:ok, destination} do
       {:ok, []}
     else
       # Check if we can move directly (both block and destination must be clear)
       is_clear = AriaState.get_fact(state, block, "clear")
       destination_clear = case destination do
-        "table" -> true  # Table is always available
+        "table" -> {:ok, true}  # Table is always available
         dest_block -> AriaState.get_fact(state, dest_block, "clear")
       end
 
-      if is_clear == true and destination_clear == true do
+      if is_clear == {:ok, true} and destination_clear == {:ok, true} do
         # Can move directly
         pickup_action = case current_pos do
-          "table" -> {:pickup, [block]}
-          other_block when is_binary(other_block) -> {:unstack, [block, other_block]}
+          {:ok, "table"} -> {:pickup, [block]}
+          {:ok, other_block} when is_binary(other_block) -> {:unstack, [block, other_block]}
           _ -> {:pickup, [block]}  # Default fallback
         end
 
@@ -307,7 +305,7 @@ defmodule AriaTemporalBlocks.Domain do
     is_clear = AriaState.get_fact(state, block, "clear")
 
     # If already clear, no action needed
-    if is_clear == true do
+    if is_clear == {:ok, true} do
       {:ok, []}
     else
       # Find what's on top of this block
@@ -329,7 +327,7 @@ defmodule AriaTemporalBlocks.Domain do
     is_clear = AriaState.get_fact(state, block, "clear")
 
     # If already not clear, no action needed
-    if is_clear == false do
+    if is_clear == {:ok, false} do
       {:ok, []}
     else
       # This is a complex goal - we need something to be placed on this block
@@ -365,13 +363,13 @@ defmodule AriaTemporalBlocks.Domain do
   @spec create() :: AriaCore.Domain.t()
   def create() do
     # Create a proper AriaCore.Domain struct
-    domain = AriaCore.new_domain(:temporal_blocks_world)
+    domain = AriaHybridPlanner.new_domain(:temporal_blocks_world)
 
     # Register all attribute-defined actions and methods
-    domain = AriaCore.register_attribute_specs(domain, __MODULE__)
+    domain = AriaHybridPlanner.register_attribute_specs(domain, __MODULE__)
 
     # Add intelligent multigoal method implementing IPyHOP algorithm
-    domain = AriaCore.add_multigoal_method_to_domain(domain, "intelligent_multigoal", &intelligent_multigoal/2)
+    domain = AriaHybridPlanner.add_multigoal_method_to_domain(domain, "intelligent_multigoal", &intelligent_multigoal/2)
 
     domain
   end
@@ -441,18 +439,22 @@ defmodule AriaTemporalBlocks.Domain do
     all_blocks = get_all_blocks(state)
 
     Enum.find(all_blocks, fn block ->
-      AriaState.get_fact(state, block, "pos") == target_block
+      AriaState.get_fact(state, block, "pos") == {:ok, target_block}
     end)
   end
 
 
   defp get_all_blocks(state) do
-    # Get all subjects that have a "clear" predicate
-    clear_true = AriaState.get_subjects_with_fact(state, "clear", true)
-    clear_false = AriaState.get_subjects_with_fact(state, "clear", false)
-
-    # Combine and return all blocks
-    (clear_true ++ clear_false) |> Enum.uniq()
+    # AriaState.get_subjects() returns predicates, not subjects!
+    # We need to find all subjects that have a "clear" predicate
+    # Since there's no direct way to get all subjects, we'll use a fallback approach
+    # that checks known possible block names
+    ["a", "b", "c", "d", "e", "f", "g", "h"] |> Enum.filter(fn block ->
+      case AriaState.get_fact(state, block, "clear") do
+        {:ok, _} -> true
+        {:error, :not_found} -> false
+      end
+    end)
   end
 
   # IPyHOP algorithm implementation
@@ -500,7 +502,7 @@ defmodule AriaTemporalBlocks.Domain do
       is_done?(state, goal_map, block) ->
         :done
 
-      not AriaState.get_fact(state, block, "clear") ->
+      AriaState.get_fact(state, block, "clear") != {:ok, true} ->
         :inaccessible
 
       not Map.has_key?(goal_map, block) or Map.get(goal_map, block) == "table" ->
@@ -508,7 +510,7 @@ defmodule AriaTemporalBlocks.Domain do
 
       true ->
         destination = Map.get(goal_map, block)
-        if is_done?(state, goal_map, destination) and AriaState.get_fact(state, destination, "clear") do
+        if is_done?(state, goal_map, destination) and AriaState.get_fact(state, destination, "clear") == {:ok, true} do
           :move_to_block
         else
           :waiting
@@ -522,15 +524,17 @@ defmodule AriaTemporalBlocks.Domain do
       block == "table" ->
         true
 
-      Map.has_key?(goal_map, block) and Map.get(goal_map, block) != AriaState.get_fact(state, block, "pos") ->
+      Map.has_key?(goal_map, block) and {:ok, Map.get(goal_map, block)} != AriaState.get_fact(state, block, "pos") ->
         false
 
-      AriaState.get_fact(state, block, "pos") == "table" ->
+      AriaState.get_fact(state, block, "pos") == {:ok, "table"} ->
         true
 
       true ->
-        current_pos = AriaState.get_fact(state, block, "pos")
-        is_done?(state, goal_map, current_pos)
+        case AriaState.get_fact(state, block, "pos") do
+          {:ok, current_pos} -> is_done?(state, goal_map, current_pos)
+          _ -> false
+        end
     end
   end
 

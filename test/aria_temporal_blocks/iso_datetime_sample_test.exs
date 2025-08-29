@@ -4,7 +4,7 @@
 defmodule AriaTemporalBlocks.IsoDatetimeSampleTest do
   use ExUnit.Case
 
-  alias AriaBlocks.Domain
+  alias AriaTemporalBlocks.Domain
   alias AriaHybridPlanner
 
   @tag :integration

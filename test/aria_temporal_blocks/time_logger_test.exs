@@ -6,7 +6,7 @@ defmodule AriaTemporalBlocks.TimeLoggerTest do
   doctest AriaTemporalBlocks.TimeLogger
 
   alias AriaTemporalBlocks.TimeLogger
-  alias AriaBlocks.Domain
+  alias AriaTemporalBlocks.Domain
 
   describe "extract_action_duration/3" do
     test "extracts ISO 8601 durations from domain" do

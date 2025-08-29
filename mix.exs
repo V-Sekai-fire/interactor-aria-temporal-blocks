@@ -27,15 +27,12 @@ defmodule AriaTemporalBlocks.MixProject do
 
   defp deps do
     [
-      # Internal dependencies
-      {:aria_hybrid_planner, git: "https://github.com/V-Sekai-fire/aria-hybrid-planner.git"},
-      {:aria_state, git: "https://github.com/V-Sekai-fire/aria-hybrid-planner.git", sparse: "apps/aria_state", override: true},
-      {:aria_timeline, git: "https://github.com/V-Sekai-fire/aria-hybrid-planner.git", sparse: "apps/aria_timeline", override: true},
-      {:aria_minizinc_stn, git: "https://github.com/V-Sekai-fire/aria-hybrid-planner.git", sparse: "apps/aria_minizinc_stn", override: true},
-      {:aria_minizinc_executor, git: "https://github.com/V-Sekai-fire/aria-hybrid-planner.git", sparse: "apps/aria_minizinc_executor", override: true},
-      # External dependencies
+      {:aria_hybrid_planner, git: "https://github.com/V-Sekai-fire/aria-hybrid-planner.git", override: true},
       {:jason, "~> 1.4"},
-      {:mox, "~> 1.0", only: :test},
+      {:libgraph, "~> 0.16"},
+      {:porcelain, "~> 2.0"},
+      {:timex, "~> 3.7"},
+      {:telemetry, "~> 1.0"},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false}
     ]
   end

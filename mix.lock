@@ -1,8 +1,9 @@
 %{
-  "aria_hybrid_planner": {:git, "https://github.com/V-Sekai-fire/aria-hybrid-planner.git", "6d72c79060c0e93d8434a0cffe1c01c2c4650865", []},
-  "aria_minizinc_executor": {:git, "https://github.com/V-Sekai-fire/aria-hybrid-planner.git", "6d72c79060c0e93d8434a0cffe1c01c2c4650865", [sparse: "apps/aria_minizinc_executor"]},
-  "aria_minizinc_stn": {:git, "https://github.com/V-Sekai-fire/aria-hybrid-planner.git", "6d72c79060c0e93d8434a0cffe1c01c2c4650865", [sparse: "apps/aria_minizinc_stn"]},
-  "aria_state": {:git, "https://github.com/V-Sekai-fire/aria-hybrid-planner.git", "6d72c79060c0e93d8434a0cffe1c01c2c4650865", [sparse: "apps/aria_state"]},
+  "aria_hybrid_planner": {:git, "https://github.com/V-Sekai-fire/aria-hybrid-planner.git", "96c0c90466ccd4ec70cc8335269257672893da3c", []},
+  "aria_minizinc_executor": {:git, "https://github.com/V-Sekai-fire/aria-hybrid-planner.git", "0d49b205cadeb9969396c1ad69ff21c9e9d5acac", [sparse: "apps/aria_minizinc_executor"]},
+  "aria_minizinc_goal": {:git, "https://github.com/V-Sekai-fire/aria-hybrid-planner.git", "0d49b205cadeb9969396c1ad69ff21c9e9d5acac", [sparse: "apps/aria_minizinc_goal"]},
+  "aria_minizinc_stn": {:git, "https://github.com/V-Sekai-fire/aria-hybrid-planner.git", "0d49b205cadeb9969396c1ad69ff21c9e9d5acac", [sparse: "apps/aria_minizinc_stn"]},
+  "aria_state": {:git, "https://github.com/V-Sekai-fire/aria-hybrid-planner.git", "0d49b205cadeb9969396c1ad69ff21c9e9d5acac", [sparse: "apps/aria_state"]},
   "aria_timeline": {:git, "https://github.com/V-Sekai-fire/aria-hybrid-planner.git", "6d72c79060c0e93d8434a0cffe1c01c2c4650865", [sparse: "apps/aria_timeline"]},
   "certifi": {:hex, :certifi, "2.15.0", "0e6e882fcdaaa0a5a9f2b3db55b1394dba07e8d6d9bcad08318fb604c6839712", [:rebar3], [], "hexpm", "b147ed22ce71d72eafdad94f055165c1c182f61a2ff49df28bcc71d1d5b94a60"},
   "combine": {:hex, :combine, "0.10.0", "eff8224eeb56498a2af13011d142c5e7997a80c8f5b97c499f84c841032e429f", [:mix], [], "hexpm", "1b1dbc1790073076580d0d1d64e42eae2366583e7aecd455d1215b0d16f2451b"},

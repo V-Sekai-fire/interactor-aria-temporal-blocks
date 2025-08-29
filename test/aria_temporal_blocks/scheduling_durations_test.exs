@@ -4,7 +4,7 @@
 defmodule AriaTemporalBlocks.SchedulingDurationsTest do
   use ExUnit.Case
 
-  alias AriaBlocks.Domain
+  alias AriaTemporalBlocks.Domain
   alias AriaHybridPlanner
   alias AriaTemporalBlocks.TimeLogger
 
