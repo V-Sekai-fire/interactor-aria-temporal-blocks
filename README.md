@@ -15,4 +15,4 @@ mix test
 
 ## Licence
 
-MIT, as the SPDX headers in the sources state; the repository has no `LICENSE` file.
+MIT. See [LICENSE](LICENSE).
